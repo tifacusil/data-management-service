@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: data-management-service
+  rabbitmq:
+    host: 204.168.203.32
+    port: 5672
+    username: subscriber
+    password: ${RABBITMQ_PASSWORD:}
+    listener:
+      simple:
+        acknowledge-mode: manual
+  datasource:
+    url: jdbc:mysql://204.168.203.32:3306/landslide_monitoring?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: landslide
+    password: ${MYSQL_PASSWORD:}
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+
+server:
+  port: 8082
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
