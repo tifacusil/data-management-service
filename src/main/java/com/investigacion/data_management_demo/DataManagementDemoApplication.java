@@ -50,6 +50,7 @@ class ConsulAutoRegistrar {
 	private final String healthPath;
 	private final String consulInterval;
 	private final String deregisterAfter;
+	private final String consulToken;
 
 	private volatile String serviceId;
 	private volatile Instant lastOkRegister;
@@ -62,7 +63,8 @@ class ConsulAutoRegistrar {
 			@Value("${server.port:8080}") int servicePort,
 			@Value("${app.consul.health-path:/health}") String healthPath,
 			@Value("${app.consul.interval:10s}") String consulInterval,
-			@Value("${app.consul.deregister-after:30s}") String deregisterAfter
+			@Value("${app.consul.deregister-after:30s}") String deregisterAfter,
+			@Value("${app.consul.token:}") String consulToken
 	) {
 		this.httpClient = HttpClient.newHttpClient();
 		this.objectMapper = objectMapper;
@@ -73,6 +75,7 @@ class ConsulAutoRegistrar {
 		this.healthPath = healthPath;
 		this.consulInterval = consulInterval;
 		this.deregisterAfter = deregisterAfter;
+		this.consulToken = consulToken;
 	}
 
 	@EventListener(ApplicationReadyEvent.class)
@@ -92,7 +95,11 @@ class ConsulAutoRegistrar {
 		}
 		try {
 			URI uri = consulBaseUri.resolve("/v1/agent/service/deregister/" + urlPathEscape(serviceId));
-			HttpRequest req = HttpRequest.newBuilder(uri).PUT(HttpRequest.BodyPublishers.noBody()).build();
+			HttpRequest.Builder builder = HttpRequest.newBuilder(uri).PUT(HttpRequest.BodyPublishers.noBody());
+			if (consulToken != null && !consulToken.isBlank()) {
+				builder.header("X-Consul-Token", consulToken);
+			}
+			HttpRequest req = builder.build();
 			HttpResponse<Void> res = httpClient.send(req, HttpResponse.BodyHandlers.discarding());
 			if (res.statusCode() / 100 == 2) {
 				log.info("Consul deregister ok: {}", serviceId);
@@ -123,10 +130,13 @@ class ConsulAutoRegistrar {
 
 			String json = objectMapper.writeValueAsString(root);
 			URI uri = consulBaseUri.resolve("/v1/agent/service/register");
-			HttpRequest req = HttpRequest.newBuilder(uri)
+			HttpRequest.Builder builder = HttpRequest.newBuilder(uri)
 					.PUT(HttpRequest.BodyPublishers.ofString(json))
-					.header("Content-Type", "application/json")
-					.build();
+					.header("Content-Type", "application/json");
+			if (consulToken != null && !consulToken.isBlank()) {
+				builder.header("X-Consul-Token", consulToken);
+			}
+			HttpRequest req = builder.build();
 			HttpResponse<String> res = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 			if (res.statusCode() / 100 == 2) {
 				lastOkRegister = Instant.now();

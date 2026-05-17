@@ -24,6 +24,7 @@ app:
   consul:
     enabled: ${CONSUL_ENABLED:true}
     base-url: ${CONSUL_BASE_URL:http://localhost:8500}
+    token: ${CONSUL_HTTP_TOKEN:}
     service-name: data-management
     service-ip: ${SERVICE_IP:}
     health-path: /health
