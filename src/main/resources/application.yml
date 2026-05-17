@@ -20,6 +20,17 @@ mybatis:
 server:
   port: 8082
 
+app:
+  consul:
+    enabled: ${CONSUL_ENABLED:true}
+    base-url: ${CONSUL_BASE_URL:http://localhost:8500}
+    service-name: data-management
+    service-ip: ${SERVICE_IP:}
+    health-path: /health
+    interval: 10s
+    heartbeat-ms: 10000
+    deregister-after: 30s
+
 springdoc:
   api-docs:
     path: /v3/api-docs

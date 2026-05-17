@@ -5,13 +5,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.investigacion.data_management_demo.mapper.GnssReadingMapper;
 import com.investigacion.data_management_demo.service.MessagesProcessedCounter;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -31,19 +38,58 @@ public class HealthController {
 	private final MessagesProcessedCounter counter;
 	private final GnssReadingMapper readingsMapper;
 	private final ObjectMapper objectMapper;
+	private final DataSource dataSource;
+	private final ConnectionFactory rabbitConnectionFactory;
 
-	public HealthController(MessagesProcessedCounter counter, GnssReadingMapper readingsMapper, ObjectMapper objectMapper) {
+	public HealthController(
+			MessagesProcessedCounter counter,
+			GnssReadingMapper readingsMapper,
+			ObjectMapper objectMapper,
+			DataSource dataSource,
+			ConnectionFactory rabbitConnectionFactory
+	) {
 		this.counter = counter;
 		this.readingsMapper = readingsMapper;
 		this.objectMapper = objectMapper;
+		this.dataSource = dataSource;
+		this.rabbitConnectionFactory = rabbitConnectionFactory;
 	}
 
 	@GetMapping("/health")
-	public Map<String, Object> health() {
-		return Map.of(
-				"status", "healthy",
+	public ResponseEntity<Map<String, Object>> health() {
+		CheckResult mysql = checkMysql();
+		CheckResult rabbit = checkRabbit();
+		boolean healthy = mysql.ok && rabbit.ok;
+
+		Map<String, Object> body = Map.of(
+				"status", healthy ? "healthy" : "unhealthy",
+				"mysql", mysql.toMap(),
+				"rabbitmq", rabbit.toMap(),
 				"messages_processed", counter.get()
 		);
+		return ResponseEntity.status(healthy ? HttpStatus.OK : HttpStatus.SERVICE_UNAVAILABLE).body(body);
+	}
+
+	private CheckResult checkMysql() {
+		try (Connection conn = dataSource.getConnection();
+			 PreparedStatement ps = conn.prepareStatement("SELECT 1");
+			 ResultSet rs = ps.executeQuery()) {
+			if (!rs.next()) {
+				return CheckResult.fail("SELECT 1 sin filas");
+			}
+			int v = rs.getInt(1);
+			return v == 1 ? CheckResult.success() : CheckResult.fail("SELECT 1 != 1");
+		} catch (Exception ex) {
+			return CheckResult.fail(ex.getClass().getSimpleName() + ": " + ex.getMessage());
+		}
+	}
+
+	private CheckResult checkRabbit() {
+		try (org.springframework.amqp.rabbit.connection.Connection conn = rabbitConnectionFactory.createConnection()) {
+			return conn.isOpen() ? CheckResult.success() : CheckResult.fail("conexion cerrada");
+		} catch (Exception ex) {
+			return CheckResult.fail(ex.getClass().getSimpleName() + ": " + ex.getMessage());
+		}
 	}
 
 	@GetMapping("/api/v1/sensors/{sensor_id}/readings")
@@ -324,5 +370,19 @@ public class HealthController {
 	}
 
 	public record PagedResponse<T>(long total, int offset, int limit, List<T> items) {
+	}
+
+	private record CheckResult(boolean ok, String error) {
+		static CheckResult success() {
+			return new CheckResult(true, null);
+		}
+
+		static CheckResult fail(String error) {
+			return new CheckResult(false, error == null || error.isBlank() ? "error" : error);
+		}
+
+		Map<String, Object> toMap() {
+			return ok ? Map.of("ok", true) : Map.of("ok", false, "error", error);
+		}
 	}
 }

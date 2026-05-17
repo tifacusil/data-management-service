@@ -35,7 +35,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(
 		classes = DataManagementDemoApplication.class,
 		properties = {
-				"app.rabbitmq.listeners.enabled=false"
+				"app.rabbitmq.listeners.enabled=false",
+				"app.consul.enabled=false"
 		},
 		webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT
 )
