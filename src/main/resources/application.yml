@@ -10,7 +10,7 @@ spring:
       simple:
         acknowledge-mode: manual
   datasource:
-    url: jdbc:mysql://204.168.203.32:3306/landslide_monitoring?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: ${MYSQL_URL:jdbc:mysql://204.168.203.32:3306/data_management_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: landslide
     password: ${MYSQL_PASSWORD:}
 

@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class DataManagementDemoApplicationTests {
 
 	static final MySQLContainer<?> mysql = new MySQLContainer<>("mysql:8.4.0")
-			.withDatabaseName("landslide_monitoring")
+			.withDatabaseName("data_management_db")
 			.withUsername("test")
 			.withPassword("test")
 			.withUrlParam("rewriteBatchedStatements", "true")

@@ -75,7 +75,7 @@ Listener is configured as **manual ack**.
 
 | Setting | Default | Env var equivalent |
 |---|---:|---|
-| `spring.datasource.url` | `jdbc:mysql://204.168.203.32:3306/landslide_monitoring?...` | `SPRING_DATASOURCE_URL` |
+| `spring.datasource.url` | `jdbc:mysql://204.168.203.32:3306/data_management_db?...` | `MYSQL_URL` or `SPRING_DATASOURCE_URL` |
 | `spring.datasource.username` | `landslide` | `SPRING_DATASOURCE_USERNAME` |
 | `spring.datasource.password` | `${MYSQL_PASSWORD:}` | `MYSQL_PASSWORD` or `SPRING_DATASOURCE_PASSWORD` |
 
