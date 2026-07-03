@@ -71,3 +71,22 @@ springdoc:
     path: /v3/api-docs
   swagger-ui:
     path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      base-path: /
+      path-mapping:
+        prometheus: metrics
+      exposure:
+        include: info,prometheus
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        dm.persist.latency: true
+      slo:
+        dm.persist.latency: 5ms,10ms,25ms,50ms,100ms,250ms,500ms,1s

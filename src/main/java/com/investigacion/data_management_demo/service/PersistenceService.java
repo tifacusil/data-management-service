@@ -11,6 +11,8 @@ import com.investigacion.data_management_demo.model.GnssPayload;
 import com.investigacion.data_management_demo.model.RainfallPayload;
 import com.investigacion.data_management_demo.model.SoilPressurePayload;
 import com.investigacion.data_management_demo.model.StrainPayload;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.TransientDataAccessException;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
@@ -29,106 +31,122 @@ public class PersistenceService {
 	private final StrainReadingMapper strainReadingMapper;
 	private final SoilPressureReadingMapper soilPressureReadingMapper;
 	private final DeepDisplacementReadingMapper deepDisplacementReadingMapper;
+	private final Timer persistTimer;
 
 	public PersistenceService(
 			GnssReadingMapper gnssReadingMapper,
 			RainfallReadingMapper rainfallReadingMapper,
 			StrainReadingMapper strainReadingMapper,
 			SoilPressureReadingMapper soilPressureReadingMapper,
-			DeepDisplacementReadingMapper deepDisplacementReadingMapper
+			DeepDisplacementReadingMapper deepDisplacementReadingMapper,
+			MeterRegistry meterRegistry
 	) {
 		this.gnssReadingMapper = gnssReadingMapper;
 		this.rainfallReadingMapper = rainfallReadingMapper;
 		this.strainReadingMapper = strainReadingMapper;
 		this.soilPressureReadingMapper = soilPressureReadingMapper;
 		this.deepDisplacementReadingMapper = deepDisplacementReadingMapper;
+		this.persistTimer = Timer.builder("dm.persist.latency")
+				.description("Latencia de persistencia MySQL por mensaje")
+				.publishPercentileHistogram()
+				.register(meterRegistry);
 	}
 
 	public void persistGnss(Envelope envelope, GnssPayload payload) {
-		try {
-			gnssReadingMapper.insertIgnore(
-					envelope.messageId(),
-					envelope.projectId(),
-					envelope.sensorId(),
-					toUtc(envelope.timestamp()),
-					toUtc(envelope.receivedAt()),
-					payload.displacementXmm(),
-					payload.displacementYmm(),
-					payload.displacementZmm(),
-					payload.displacementHorizontalMm(),
-					payload.cumulativeDisplacementMm(),
-					payload.fixQuality()
-			);
-		} catch (DataAccessException ex) {
-			throw wrapDbException(ex);
-		}
+		persistTimer.record(() -> {
+			try {
+				gnssReadingMapper.insertIgnore(
+						envelope.messageId(),
+						envelope.projectId(),
+						envelope.sensorId(),
+						toUtc(envelope.timestamp()),
+						toUtc(envelope.receivedAt()),
+						payload.displacementXmm(),
+						payload.displacementYmm(),
+						payload.displacementZmm(),
+						payload.displacementHorizontalMm(),
+						payload.cumulativeDisplacementMm(),
+						payload.fixQuality()
+				);
+			} catch (DataAccessException ex) {
+				throw wrapDbException(ex);
+			}
+		});
 	}
 
 	public void persistRainfall(Envelope envelope, RainfallPayload payload) {
-		try {
-			rainfallReadingMapper.insertIgnore(
-					envelope.messageId(),
-					envelope.projectId(),
-					envelope.sensorId(),
-					toUtc(envelope.timestamp()),
-					toUtc(envelope.receivedAt()),
-					payload.rainfallMm(),
-					payload.cumulativeRainfallMm(),
-					payload.intervalMinutes()
-			);
-		} catch (DataAccessException ex) {
-			throw wrapDbException(ex);
-		}
+		persistTimer.record(() -> {
+			try {
+				rainfallReadingMapper.insertIgnore(
+						envelope.messageId(),
+						envelope.projectId(),
+						envelope.sensorId(),
+						toUtc(envelope.timestamp()),
+						toUtc(envelope.receivedAt()),
+						payload.rainfallMm(),
+						payload.cumulativeRainfallMm(),
+						payload.intervalMinutes()
+				);
+			} catch (DataAccessException ex) {
+				throw wrapDbException(ex);
+			}
+		});
 	}
 
 	public void persistStrain(Envelope envelope, StrainPayload payload) {
-		try {
-			strainReadingMapper.insertIgnore(
-					envelope.messageId(),
-					envelope.projectId(),
-					envelope.sensorId(),
-					toUtc(envelope.timestamp()),
-					toUtc(envelope.receivedAt()),
-					payload.strainMicrostrain(),
-					payload.temperatureCelsius()
-			);
-		} catch (DataAccessException ex) {
-			throw wrapDbException(ex);
-		}
+		persistTimer.record(() -> {
+			try {
+				strainReadingMapper.insertIgnore(
+						envelope.messageId(),
+						envelope.projectId(),
+						envelope.sensorId(),
+						toUtc(envelope.timestamp()),
+						toUtc(envelope.receivedAt()),
+						payload.strainMicrostrain(),
+						payload.temperatureCelsius()
+				);
+			} catch (DataAccessException ex) {
+				throw wrapDbException(ex);
+			}
+		});
 	}
 
 	public void persistSoilPressure(Envelope envelope, SoilPressurePayload payload) {
-		try {
-			soilPressureReadingMapper.insertIgnore(
-					envelope.messageId(),
-					envelope.projectId(),
-					envelope.sensorId(),
-					toUtc(envelope.timestamp()),
-					toUtc(envelope.receivedAt()),
-					payload.pressureKpa(),
-					payload.temperatureCelsius()
-			);
-		} catch (DataAccessException ex) {
-			throw wrapDbException(ex);
-		}
+		persistTimer.record(() -> {
+			try {
+				soilPressureReadingMapper.insertIgnore(
+						envelope.messageId(),
+						envelope.projectId(),
+						envelope.sensorId(),
+						toUtc(envelope.timestamp()),
+						toUtc(envelope.receivedAt()),
+						payload.pressureKpa(),
+						payload.temperatureCelsius()
+				);
+			} catch (DataAccessException ex) {
+				throw wrapDbException(ex);
+			}
+		});
 	}
 
 	public void persistDeepDisplacement(Envelope envelope, DeepDisplacementPayload payload) {
-		try {
-			deepDisplacementReadingMapper.insertIgnore(
-					envelope.messageId(),
-					envelope.projectId(),
-					envelope.sensorId(),
-					toUtc(envelope.timestamp()),
-					toUtc(envelope.receivedAt()),
-					payload.depthM(),
-					payload.tiltXmm(),
-					payload.tiltYmm(),
-					payload.cumulativeTiltMm()
-			);
-		} catch (DataAccessException ex) {
-			throw wrapDbException(ex);
-		}
+		persistTimer.record(() -> {
+			try {
+				deepDisplacementReadingMapper.insertIgnore(
+						envelope.messageId(),
+						envelope.projectId(),
+						envelope.sensorId(),
+						toUtc(envelope.timestamp()),
+						toUtc(envelope.receivedAt()),
+						payload.depthM(),
+						payload.tiltXmm(),
+						payload.tiltYmm(),
+						payload.cumulativeTiltMm()
+				);
+			} catch (DataAccessException ex) {
+				throw wrapDbException(ex);
+			}
+		});
 	}
 
 	private RuntimeException wrapDbException(DataAccessException ex) {
