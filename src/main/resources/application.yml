@@ -21,6 +21,12 @@ server:
   port: 8082
 
 app:
+  rabbitmq:
+    listeners:
+      enabled: ${RABBITMQ_LISTENERS_ENABLED:true}
+      concurrency: ${RABBITMQ_LISTENER_CONCURRENCY:4}
+      max-concurrency: ${RABBITMQ_LISTENER_MAX_CONCURRENCY:8}
+      prefetch: ${RABBITMQ_LISTENER_PREFETCH:50}
   consul:
     enabled: ${CONSUL_ENABLED:true}
     base-url: ${CONSUL_BASE_URL:http://localhost:8500}
