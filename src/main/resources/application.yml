@@ -9,6 +9,10 @@ spring:
     listener:
       simple:
         acknowledge-mode: manual
+        # Instrumenta cada mensaje consumido => timer spring.rabbitmq.listener,
+        # que Prometheus ve como spring_rabbitmq_listener_seconds_*. Es la métrica
+        # con la que se mide throughput/latencia del consumer en el Sistema A.
+        observation-enabled: true
   datasource:
     url: ${MYSQL_URL:jdbc:mysql://204.168.203.32:3306/data_management_db?useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true}
     username: landslide
@@ -19,6 +23,21 @@ mybatis:
 
 server:
   port: 8082
+
+# Prometheus del Sistema A scrapea http://localhost:8082/metrics (y :8086), NO
+# /actuator/prometheus. Por eso se saca el base-path /actuator y se mapea el
+# endpoint prometheus a /metrics: así el scrape config existente funciona sin
+# tocarlo. Solo se expone prometheus — health sigue siendo el controller propio
+# (/health), que ya lo usan Consul y los scripts de chaos; exponer el health de
+# actuator acá colisionaría con ese mapping.
+management:
+  endpoints:
+    web:
+      base-path: /
+      exposure:
+        include: prometheus
+      path-mapping:
+        prometheus: metrics
 
 app:
   rabbitmq:

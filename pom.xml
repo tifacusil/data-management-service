@@ -83,6 +83,23 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 		</dependency>
+
+		<!-- Observabilidad: actuator + registry Prometheus exponen el endpoint que
+		     scrapea Prometheus del Sistema A (job "microservices", :8082 y :8086).
+		     Sin estas dos el servicio arranca y consume normal, pero /metrics
+		     devuelve 404 y el sistema queda sin dm_messages_processed_total ni
+		     spring_rabbitmq_listener_* — que es como quedó A tras el deploy del
+		     2026-07-15: las métricas de dm cortaron en seco y nadie se enteró
+		     hasta revisar los targets de Prometheus. -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
