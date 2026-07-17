@@ -50,10 +50,19 @@ app:
     enabled: ${CONSUL_ENABLED:true}
     base-url: ${CONSUL_BASE_URL:http://localhost:8500}
     token: ${CONSUL_HTTP_TOKEN:}
-    service-name: data-management
+    # DEBE ser data-management-service: es el nombre por el que consul-template
+    # arma el upstream de nginx (`range service "data-management-service|passing"`).
+    # Registrarse como "data-management" deja al template sin backends y el
+    # gateway sin upstream, aunque el servicio este perfectamente sano.
+    service-name: ${CONSUL_SERVICE_NAME:data-management-service}
     service-ip: ${SERVICE_IP:}
     health-path: /health
     interval: 10s
+    # heartbeat + deregister-after = auto-recuperacion: si la instancia queda
+    # critical (congelada, caida) Consul la saca a los 30s y nginx deja de
+    # mandarle trafico; cuando revive, el heartbeat la re-registra en <=10s sin
+    # intervencion. Sin heartbeat, una instancia desregistrada no vuelve nunca
+    # (paso el 2026-07-16: el sistema corrio a media capacidad ~7h sin aviso).
     heartbeat-ms: 10000
     deregister-after: 30s
 
