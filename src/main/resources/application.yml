@@ -24,21 +24,6 @@ mybatis:
 server:
   port: 8082
 
-# Prometheus del Sistema A scrapea http://localhost:8082/metrics (y :8086), NO
-# /actuator/prometheus. Por eso se saca el base-path /actuator y se mapea el
-# endpoint prometheus a /metrics: así el scrape config existente funciona sin
-# tocarlo. Solo se expone prometheus — health sigue siendo el controller propio
-# (/health), que ya lo usan Consul y los scripts de chaos; exponer el health de
-# actuator acá colisionaría con ese mapping.
-management:
-  endpoints:
-    web:
-      base-path: /
-      exposure:
-        include: prometheus
-      path-mapping:
-        prometheus: metrics
-
 app:
   rabbitmq:
     listeners:
@@ -72,6 +57,12 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+# Prometheus del Sistema A scrapea http://localhost:8082/metrics (y :8086), NO
+# /actuator/prometheus. Por eso se saca el base-path /actuator y se mapea el
+# endpoint prometheus a /metrics: así el scrape config existente funciona sin
+# tocarlo. Solo se expone prometheus — health sigue siendo el controller propio
+# (/health), que ya lo usan Consul y los scripts de chaos; exponer el health de
+# actuator acá colisionaría con ese mapping.
 management:
   endpoints:
     web:
@@ -79,7 +70,7 @@ management:
       path-mapping:
         prometheus: metrics
       exposure:
-        include: info,prometheus
+        include: prometheus
   prometheus:
     metrics:
       export:
